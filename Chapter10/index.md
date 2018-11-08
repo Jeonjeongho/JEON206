@@ -99,6 +99,50 @@ Map 객체는 이들 결함을 모두 해결했고, 키와 값을 연결할 목�
 
 ## 10.2 위크맵
 WeakMap은 다음 차이점을 제외하면 Map과 완전히 같다.
+
 * 키는 반드시 객체여야 한다.
 * WeakMap의 키는 [가비지 콜렉션](https://goo.gl/EWWHnZ)에 포함될 수 있다.
 * WeakMap은 이터러블이 아니며 clear() 메서드도 없다.
+
+일반적으로 자바스크립트는 코드 어딘가에서 객체를 참조하는 한 그 객체를 메모리에 계속 유지 한다. 예를 들어 Map의 키인 객체 o가 있다면, 자바스크립트는 Map이 존재하는 한 o를 메모리에 계속 유지한다. WeakMap에서는 그렇지 않다. 따라서 WeakMap은 이터러블이 될 수 없다. 가비지 콜렉션 중인 객체를 노출할 위험이 너무 크기 때문이다.
+
+WeakMap의 이런 특징은 객체 인스턴스의 전용(private)키를 저장하기에 알맞는다.
+```
+    const SecretHolder = (function(){
+        const secrets = new WeakMap();
+        return class {
+            setSecret(secret) {
+                secrets.set(this, secret);
+            }
+            getSecret() {
+                return secrets.get(this);
+            }
+        }
+    })();
+```
+앞의 예제에서는 WeakMap과 그 위크맵을 사용하는 클래스를 함께 IIFE에 넣었다. IIFE 외부에서는 그 인스턴스에 비밀스런 내용을 저장할 수 있는  SecretHolder 클래스를 얻게 된다. 비밀을 저장할 때는 setSecret 메서드를 써야만 하고, 보려 할 때는 getSecret 메서드를 써야만 한다.
+```
+여기서부터 248 페이지 
+```
+
+Map과 마찬가지로 Set에도 size 프로퍼티가 있다.
+```
+    roles.size      //2
+```
+셋의 장점은 아주 단순하다. 추가하려는 것이 셋에 이미 있는지 확인할 필요가 없다. 이미 있다면 아무 일도 일어나지 않는다.
+```
+    roles.add("User");      //Set ["User","Admin"]
+    roles.size;            //2
+```
+역할을 제거할 때는 delete()를 호출한다. 제거에 성공했다면, 즉 그런 역할이 셋에 존재했다면 true를 반환하고, 그렇지 않다면 false를 반환한다.
+```
+     roles.delete("Admin");         //true
+     roles;
+     roles.delete("Admin");         //false
+```
+## 10.4 위크셋
+위크셋은 객체만 포함할 수 있으며, 이 객체들을 가비지 콜렉션의 대상이 된다. WeakMap과 마찬가지로 WeakSet도 이터러블이 아니므로 위크셋의 용도는 매우 적다. 위크셋의 실제 용도는 주어진 객체가 셋 안에 존재하는지 아닌지를 알아보는 것뿐이라고 해도 과언이 아니다.
+예를 들어 산타 클로스가 uaughty라는 WeakSet을 가지고 어떤 아이가 우는 아이인지 확인해서 선물 대신 석탄을 놓고 온다고 해보자.
+```
+여기서부터 250페이지
+```
