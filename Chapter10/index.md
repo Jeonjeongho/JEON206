@@ -148,7 +148,7 @@ WeakMap의 이런 특징은 객체 인스턴스의 전용(private)키를 저장�
         }
     })();
 ```
-앞의 예제에서는 WeakMap과 그 위크맵을 사용하는 클래스를 함께 IIFE에 넣었다. IIFE 외부에서는 그 인스턴스에 비밀스런 내용을 저장할 수 있는  SecretHolder 클래스를 얻게 된다. 비밀을 저장할 때는 setSecret 메서드를 써야만 하고, 보려 할 때는 getSecret 메서드를 써야만 한다.
+앞의 예제에서는 WeakMap과 그 위크맵을 사용하는 클래스를 함께 [IIFE](https://goo.gl/V7USWa)(즉시 실행 함수 표현)에 넣었다. IIFE 외부에서는 그 인스턴스에 비밀스런 내용을 저장할 수 있는  SecretHolder 클래스를 얻게 된다. 비밀을 저장할 때는 setSecret 메서드를 써야만 하고, 보려 할 때는 getSecret 메서드를 써야만 한다.
 ```
     const a = new SecretHolder();
     const b = new SecretHolder();
