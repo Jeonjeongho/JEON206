@@ -61,7 +61,7 @@ const userRoles = new Map([
     userRoles.set(u1,'Admin');
     userRoles.get(u1);          //'Admin'
 ```
-9.[size 프로퍼티](https://goo.gl/2dNN3p)는 맵의 요소 숫자를 반환한다.
+9.[size 프로퍼티](https://goo.gl/2dNN3p)는 객체의 요소 갯수를 반환한다.
 ```
     userRoles.size;         //3
 ```
