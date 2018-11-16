@@ -5,7 +5,7 @@
 - https://gist.github.com/qodot/ecf8d90ce291196817f8cf6117036997
 
 ### 이터레이터
-- **values()** 메서드 : 이터레이터 생성
+- **values() 메서드** : 이터레이터 생성
     - book이라는 배열에 values 메서드를 사용하여 이터레이터로 만들었습니다.
     ```
         const book = [
@@ -20,7 +20,7 @@
         // book이라는 배열에 values메서드를 사용하여 이터레이터로 만듭니다.
         const it = book.values();
     ```
-- **next()** 메서드 : 이터레이터 실행
+- **next() 메서드** : 이터레이터 실행
     - book이라는 배열이 책이라면 책을 읽기 전에는 책갈피를 꽂을 수 없습니다.
     - '읽기 시작'하려면 **next** 메서드를 호출합니다.
     - next메서드가 반환하는 객체에는 value, done 프로퍼티가 있습니다.
@@ -37,7 +37,7 @@
         it.next(); // { value: undefined, done: true }
         it.next(); // { value: undefined, done: true }
     ```
-- 독립적
+- **독립적**
     - 새 이터레이터를 만들 때마다 처음에서 시작합니다.
     - 모두 독립적이며 여러 이터레이터를 동시에 사용할 수도 있습니다.
     ```
@@ -55,6 +55,8 @@
 
 
 ## 12.1 이터레이션 프로토콜
+> '순회가능한' 객체란 무엇일까? 바로 Symbol.iterator 심볼을 속성으로 가지고 있고, 이터레이터 객체를 반환하는 객체를 뜻한다. 이런 스펙을 이터러블 프로토콜 이라고 하고 이 프로토콜을 지킨 객체를 이터러블 객체라고 한다.
+
 - 이터레이터 프로토콜은 symbol 메서드를 통해 모든 객체를 이터러블 객체로 바꿀 수 있습니다.
 ```
     class Log {
@@ -66,60 +68,56 @@
         }
     }
 ```
-- 메시지에 타임스탴프를 붙이는 로그 클래스가 필요하다고 생각해 봅시다. 내적으로 타임 스탬프가 붙은 메시지는 배열에 저장합니다.
+- 메시지에 타임스탬프를 붙이는 로그 클래스가 필요하다고 생각해 봅시다. 내적으로 타임 스탬프가 붙은 메시지는 배열에 저장합니다.
 - 로그를 기록한 항목을 순회(이터러블)하고 싶다면? log.messages에 접근 할 수 있지만, log를 배열을 조작하듯 가능하게 해주는 것이 이터레이션 프로토콜입니다.
 - 이터레이터 프로토콜을 구현하는 방법은 다음과 같이 두가지 방법이 있습니다.
+    - **이터레이터를 가져와 이터레이터 프로토콜을 구현하는 방법**
+    ```
+        class Log {
+            constructor() {
+                this.messages = [];
+            }
+            add(message) {
+                this.messages.push({ message, timestamp: Date.now()});
+            }
 
-**이터레이터를 가져와 이터레이터 프로토콜을 구현하는 방법**
-```
+            [Symbol.iterator]() {
+                return this.messages.values();
+            }
+        }
+        
+        const log = new Log();
+            log.add("first day at see");
+            log.add("spotted whale");
+            log.add("spotted another vessel");
+        ​
+        //로그를 배열처럼 순회합니다.
+        for (let entry of log) {
+            console.log(`${entry.message} @ ${entry.timestamp}`);
+        }
+
+        //결과
+        first day at see @ 1542356233131
+        spotted whale @ 1542356233131
+        spotted another vessel @ 1542356233131
+    ```
+    - **직접 이터레이터를 만드는 방법**
+    ```
     class Log {
-        constructor() {
-            this.messages = [];
-        }
-        add(message) {
-            this.messages.push({ message, timestamp: Date.now()});
-        }
-
+        //...
         [Symbol.iterator]() {
-            return this.messages.values();
-        }
-    }
-    
-    const log = new Log();
-        log.add("first day at see");
-        log.add("spotted whale");
-        log.add("spotted another vessel");
-    ​
-    //로그를 배열처럼 순회합니다.
-    for (let entry of log) {
-        console.log(`${entry.message} @ ${entry.timestamp}`);
-    }
-
-    //결과
-    first day at see @ 1542356233131
-    spotted whale @ 1542356233131
-    spotted another vessel @ 1542356233131
-```
-
-**직접 이터레이터를 만드는 방법**
-```
-class Log {
-    //...
-    [Symbol.iterator]() {
-        let i = 0;
-        const messages = this.messages;
-        return {
-            next() {
-                if(i > = messages.length)
-                    return { value: undefined, done: true };
-                return { value: messages[i+ +], done: false };
+            let i = 0;
+            const messages = this.messages;
+            return {
+                next() {
+                    if(i > = messages.length)
+                        return { value: undefined, done: true };
+                    return { value: messages[i+ +], done: false };
+                }
             }
         }
     }
-}
-```
-
-**피보나치수열 예**
+    ```
 
 ## 12.2  제너레이터
 - 이터레이터를 사용해 자신의 실행을 제어하는 함수 입니다.
