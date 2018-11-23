@@ -12,10 +12,34 @@
 ## 13.2 값을 반환하는 서브루틴으로서의 함수
 값을 반환하도록 만들 수 있음
 
-함수 이름 예시
-* 불리언을 반환하거나, 불리언이 필요한 컨텍스트에서 사용하도록 만든 함수는 is로 시작하는 이름을 붙이는 게 일반적
+<예시>
+```
+function printLeapYearStatus() {
+    const year = new Date().getFullYear();
+    if(year % 4 !== 0) console.log(`${year} is NOT a leap year.`)
+    else if(year % 100 != 0) console.log(`${year} IS a leap year.`)
+    else if(year % 400 != 0) console.log(`${year} is NOT a leap year.`)
+    else console.log(`{$year} IS a leap year`);
+}
+```
+함수가 값을 반환하는 서브루틴이 되도록 고쳐 써보자
+```
+function isCurrentYearLeapYear() {
+    const year = new Date().getFullYear();
+    if(year % 4 !== 0) return false;
+    else if(year % 100 != 0) return true;
+    else if(year % 400 != 0) return false;
+    else return true;
+}
+```
+새로 만든 함수의 반환값을 활용
+```
+const daysInMonth =
+    [31, isCurrentYearLeapYear() ? 29 : 28, 31, 30, 31, 30,
+        31, 31, 30, 31, 30, 31];
+if(isCurrentYearLeapYear()) console.log('It is a leap year.');
+```
 
-항상 현 날짜를 기준으로 한다면 current 라는 이름을 붙이기도 함
 
 ## 13.3 함수로서의 함수
 순수한 함수
