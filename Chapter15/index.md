@@ -52,6 +52,8 @@ const d = new Date(Date, UTC(2018, 4, 27)); // May 27, 2018 UTC
 ```
 특정 타임존에 있는 서버에서 날짜를 생성하는 경우 => moment.tz
 ```
+// Moment.js에 넘기는 배열은 자바스크립트의 Date 생성자에 넘기는 매개변수와 똑같고, 월은 0으로 시작한다.
+// toDate() 메서드는 Moment.js 객체를 자바스크립트 Date 객체로 변환한다.
 const d = moment.tz([2018, 3, 27, 9, 19], 'America/Los_Angeles').toDate();
 const s = moment.tz([2018, 3, 27, 9, 19], 'Asia/Seoul').toDate();
 ```
@@ -98,6 +100,7 @@ d.getMilliseconds(); // 0
 ​
 ..etc
 ```
+Moment.js를 사용한다면 날짜의 각 부분에 대해 신경 쓸 필요가 별로 없긴 하지만, 알아둬서 나쁠 것은 없다.
 
 ## 15.9 날짜 비교
 비교 연산자를 이용해 어떤 날짜가 더 앞인지 단순 비교 가능
@@ -130,8 +133,10 @@ const delta = new Date(2020, 0, 1).valueOf() - min;
 ​
 for (let i=0; i<10; i++)
     dates.push(new Date(min + delta*Math.random()));
-    
+
+// 다음과 같이 역순으로 정렬 할 수 있음
 dates.sort((a, b) => b - a);
+// 날짜순으로 정렬할 수도 있음
 dates.sort((a, b) => a - b);
 ```
 
