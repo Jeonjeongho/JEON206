@@ -256,22 +256,179 @@ HTML페이지를 문자열에 담았다고 합시다. `<a>, <area>, <link>, <scr
 이 예제가 완벽하지 않다는 것을 참고 하십시오.
 
 ## 17.13 소극적 일치, 적극적 일치
+정규식은 기본적으로 적극적입니다. 검색을 멈추기 전에 일치하는 것을 최대한 많이 찾으려고 한다는 뜻입니다.
+예를 들어 HTML 텍스트에서 `<i>` 태그를 `<strong>` 태그로 바꿔야 한다고 합시다. 우선 이렇게 해 볼 수 있습니다.
+```
+    const input = "Regex pros know the difference between\n" +
+     "<i>greedy</i> and <i>lazy</i> matching.";
+    
+    input.replace(/<i>(.*)<\/i>/ig, '<strong>$1</strong>');
+
+    // console
+    "Regex pros know the difference between
+    <strong>greedy</i> and <i>lazy</strong> matching."
+```
+- 교체 문자열에 있는 $1은 .* 그룹에 일치하는 문자열로 바뀝니다.
+
+위 예제의 콘솔 부분을 살펴보면 우리가 작성한 정규식은 우리가 의도하지 않은 결과를 나타냅니다. 정규식은 일치할 가능성이 있는 동안 문자를 소비하지 않고 계속 넘어갑니다. 그리고 그 과정을 적극적으로 진행합니다. `<i>`를 만나면 `</i>`를 더는 찾을 수 없을 때까지 소비하지 않고 진행합니다. 원래 문자열에는 `</i>`가 두 개 있으므로 첫번째 것을 무시하고 두 번째 것에서 일치한다고 판단합니다.
+
+- 정규식이 우리가 의도한 대로 실행되게 하기 위해 메타 문자 \*를 소극적으로 바꾸는 방법을 쓰겠습니다.
+```
+    input.replace(/<i>(.*?)<\/i>/ig, '<strong>$1</strong>');
+
+    // console
+    "Regex pros know the difference between
+    <strong>greedy</strong> and <strong>lazy</strong> matching."
+```
+반복 메타 문자 \*뒤에 ?를 넣었습니다. 이제 정규식 엔진은 `</i>`를 보는 즉시 일치하는 것을 찾았다고 판단합니다. 따라서 `</i>`를 발견할 때마다 그때까지 찾은 것을 소비하고, 일치하는 범위를 넓히려 하지 않습니다. 그렇게 우리가 원하는 것에 딱 맞게 동작합니다.
 
 ## 17.14 역참조
+그룹을 사용하면 역참조라는 테크닉도 쓸 수 있습니다. XYYX 형태의 밴드 이름을 찾고 싶다고 합시다. PJJP, ANNA, GOOG 등이 해당되겠죠. 역참조를 이러한 경우에 유용하게 쓸 수 있습니다. 서브 그룹을 포함해 정규식의 각 그룹은 숫자를 할당 받습니다. 맨 왼쪽이 1번에서 시작해 오른쪽으로 갈수록 1씩 늘어납니다. 역슬래시 뒤에 숫자를 써서 이 그룹을 참조할 수 있습니다.
+```
+    const promo = "Opening for XAAX is the dynamic GOOG! At the box office now!";
+    const bands = promo.match(/(?:[A-Z])(?:[A-Z])\2\1/g);
+```
+이 정규식을 왼쪽에서 오른쪽으로 읽으면 그룹이 두 개있고, 그 다음에 \2\1이 있습니다. 첫번째 그룹이 X에 일치하고 두 번째 그룹이 A에 일치한다면 \2는 A이고 \1은 X입니다.
+HTML에서는 태그의 속성값에 큰 따옴표나 작은 따옴표를 써야 합니다. 역참조를 이용하면 쉽게 찾을 수 있습니다.
+```
+    //작은따옴표와 큰따옴표를 모두 썼으므로 백틱으로 문자열 경계를 나타냈습니다.
+    const html = `<img alt='A "simple" example.'>` +
+     `<img alt="Don't abuse it!">`;
+    const matches = html.match(/<img alt=(?:['"]).*?\1/g);
+```
+밴드 이름 예제와 마찬가지로 첫 번째 그룹은 따옴표 뒤에 0개 이상의 문자를 찾습니다. 그 다음에 있는 \1은 앞에서 찾은 따옴표의 짝입니다.
 
 ## 17.15 그룹 교체
+
+```
+    let html = '<a class="nope" href="/yep">Yep</a>';
+    html = html.replace(/<a .*?(href=".*?").*?>/, '<a $1>');
+```
+```
+    let html = '<a class="yep" href="/yep" id="nope">Yep</a>';
+    html = html.replace(/<a .*?(class=".*?").*?(href=".*?").*?>/, '<a $2 $1>');
+```
+
+```
+    const input = "One two three";
+    input.replace(/two/, '($`)'); // "One (One ) three"
+    input.replace(/\w+/g, '($&)'); 
+    input.replace(/two/, "($')"); // "One ( three) three"
+    input.replace(/two/, "($$)"); 
+```
 ## 17.16 함수를 이용한 교체
+```
+    const html =
+     `<a class="foo" href="/foo" id="foo">Foo</a>\n` +
+     `<A href='/foo' Class="foo">Foo</a>\n` +
+     `<a href="/foo">Foo</a>\n` +
+     `<a onclick="javascript:alert('foo!')" href="/foo">Foo</a>`;
+```
+```
+    function sanitizeATag(aTag) {
+        // get the parts of the tag...
+        const parts = aTag.match(/<a\s+(.*?)>(.*?)<\/a>/i);
+        // parts[1] are the attributes of the opening <a> tag
+        // parts[2] are what's between the <a> and </a> tags
+        const attributes = parts[1]
+        // then we split into individual attributes
+        .split(/\s+/);
+        return '<a ' + attributes
+        // we only want class, id, and href attributes
+        .filter(attr => /^(?:class|id|href)[\s=]/i.test(attr))
+        // joined by spaces
+        .join(' ')
+        // close the opening <a> tag
+        + '>'
+        // add the contents
+        + parts[2]
+        // and the closing tag
+        + '</a>';
+    }
+```
+```
+    html.match(/<a .*?>(.*?)<\/a>/ig);
+```
+```
+    html.replace(/<a .*?>(.*?)<\/a>/ig, function(m, g1, offset) {
+     console.log(`<a> tag found at ${offset}. contents: ${g1}`);
+    });
+```
+```
+    html.replace(/<a .*?<\/a>/ig, function(m) {
+     return sanitizeATag(m);
+    });
+```
+```
+    html.replace(/<a .*?<\/a>/ig, sanitizeATag);
+```
+
 ## 17.17 위치 지정
+```
+    const input = "It was the best of times, it was the worst of times";
+    const beginning = input.match(/^\w+/g); // "It"
+    const end = input.match(/\w+$/g); // "times"
+    const everything = input.match(/^.*$/g); // sames as input
+    const nomatch1 = input.match(/^best/ig);
+    const nomatch2 = input.match(/worst$/ig);
+```
+```
+    const input = "One line\nTwo lines\nThree lines\nFour";
+    const beginnings = input.match(/^\w+/mg); // ["One", "Two", "Three", "Four"]
+    const endings = input.match(/\w+$/mg); // ["line", "lines", "lines", "Four"]
+```
 ## 17.18 단어 경계 일치
+```
+    const inputs = [
+        "john@doe.com", // nothing but the email
+        "john@doe.com is my email", // email at the beginning
+        "my email is john@doe.com", // email at the end
+        "use john@doe.com, my email", // email in the middle, with comma afterward
+        "my email:john@doe.com.", // email surrounded with punctuation
+    ];
+```
+```
+    const emailMatcher = /\b[a-z][a-z0-9._-]*@[a-z][a-z0-9_-]+\.[a-z]+(?:\.[a-z]+)?\b/ig;
+    
+    inputs.map(s => s.replace(emailMatcher, '<a href="mailto:$&">$&</a>'));
+    
+    // returns [
+    // "<a href="mailto:john@doe.com">john@doe.com</a>",
+    // "<a href="mailto:john@doe.com">john@doe.com</a> is my email",
+    // "my email is <a href="mailto:john@doe.com">john@doe.com</a>",
+    // "use <a href="mailto:john@doe.com">john@doe.com</a>, my email",
+    // "my email:<a href="mailto:john@doe.com>john@doe.com</a>.",
+    // ]
+```
 ## 17.19 룩어헤드
+```
+    function validPassword(p) {
+        return /[A-Z]/.test(p) && // at least one uppercase letter
+        /[0-9]/.test(p) && // at least one number
+        /[a-z]/.test(p) && // at least one lowercase letters
+        !/[^a-zA-Z0-9]/.test(p); // only letters and numbers
+    }
+```
+```
+    function validPassword(p) {
+        return /[A-Z].*[0-9][a-z]/.test(p);
+    }
+```
+```
+    function validPassword(p) {
+        return /(?=.*[A-Z])(?=.*[0-9])(?=.*[a-z])(?!.*[^a-zA-Z0-9])/.test(p);
+    }
+```
 ## 17.20 동적으로 정규식 만들기
+정규식을 사용할 때는 일반적으로 RegExp 생성자보다 리터럴을 쓰는 편이 좋습니다. 정규식 리터럴을 쓰면 타이핑하는 수고도 덜 수 있고, 자바스크립트에서 으레 하는 역슬래시를 사용한 이스케이프도 줄어들기 때문지요. 하지만 RegExp가 필요할 때도 있는데 동적으로 정규식을 만들어야 할 때가 그런 경우입니다.
 ```
     const users = ["mary", "nick", "arthur", "sam", "yvette"];
     const text = "User @arthur started the backup and 15:15, " + "and @nick and @yvette restored it at 18:35.";
     const userRegex = new RegExp(`@(?:${users.join('|')})\\b`, 'g');
     text.match(userRegex); // [ "@arthur", "@nick", "@yvette" ]
 ```
-이 예제를 리터럴 방식으로 표기하면 /@(?:mary|nick|arthur|sam|yvette)\b/g,
+이 예제를 리터럴 방식으로 표기하면 /@(?:mary|nick|arthur|sam|yvette)\b/g일 겁니다. 
+동적으로 정규식을 만들경우에는 역슬래시 두개를 써서 리터럴 문자 b로 인식 되는 것을 방지 하였습니다.
 
 ## 17.21 요약
 - 이 장에서는 정규식의 요점만 간단히 짚어봤습니다.
