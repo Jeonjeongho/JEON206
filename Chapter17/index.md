@@ -299,16 +299,19 @@ HTML에서는 태그의 속성값에 큰 따옴표나 작은 따옴표를 써야
 밴드 이름 예제와 마찬가지로 첫 번째 그룹은 따옴표 뒤에 0개 이상의 문자를 찾습니다. 그 다음에 있는 \1은 앞에서 찾은 따옴표의 짝입니다.
 
 ## 17.15 그룹 교체
+그룹을 사용하면 문자열 교체도 더 다양한 방법으로 할 수 있습니다. 이번에도 HTML을 예로 들겠습니다. `<a>`태그에서 href가 아닌 속성을 전부 제거하고 싶다고 합시다.
 
 ```
     let html = '<a class="nope" href="/yep">Yep</a>';
     html = html.replace(/<a .*?(href=".*?").*?>/, '<a $1>');
 ```
+역참조와 마찬가지로 모든 그룹은 1로 시작하는 숫자를 할당받습니다. 정규식에서 첫 번째 그룹은 \1이고, 교체할 문자열에서는 $1이 첫번째 그룹에 해당합니다. 이번에도 소극적 일치를 써서 다른 `<a>`태그까지 검색이 확장되는 일을 막았습니다.
+이 정규식은 href속성의 값에 큰 따옴표가 아닌 작은 따옴표를 쓴 문자열에서는 아무것도 찾지 못합니다. 이번에 class속성과 href속성을 남기고 나머지는 모두 없애고 싶습니다.
 ```
     let html = '<a class="yep" href="/yep" id="nope">Yep</a>';
     html = html.replace(/<a .*?(class=".*?").*?(href=".*?").*?>/, '<a $2 $1>');
 ```
-
+이 정규식에서는 class와 href의 순서를 바꾸므로 결과 문자열에서는 class 보다 href가 앞에옵니다. 이정규식 역시 위에서 살펴본 정규식과 같이 속성 값에 작은 따옴표를 쓰면 동작하지 않습니다. 또한 $1, $2 등 숫자로 참조하는 것 외에도 일치하는 것 앞에 있는 전부를 참조하는 $\`, 일치하는 것 자체인 $&, 일치하는 것 뒤에 있는 것 뒤에 있는 전부를 참조하는 $’도 있습니다. $기호 자체가 필요한 경우에는 $$를 씁니다.
 ```
     const input = "One two three";
     input.replace(/two/, '($`)'); // "One (One ) three"
@@ -317,6 +320,8 @@ HTML에서는 태그의 속성값에 큰 따옴표나 작은 따옴표를 써야
     input.replace(/two/, "($$)"); 
 ```
 ## 17.16 함수를 이용한 교체
+함수를 이용하면 아주 복잡한 정규식을 좀 더 단순한 정규식으로 분할할 수 있습니다. 
+`<a>`태그를 정확한 규격에 맞도록 바꾸는 프로그램을 만들겁니다. 이 규격은 class, id, href 속성은 허용하지만 나머지 속성은 제거합니다. 문제는 원래 HTML이 어떻게 만들어져 있는지 짐작을 할 수 없을 뿐더러 허용하는 속성이 있다는 보장도 없고, 있더라도 순서가 뒤죽박죽일 수 있습니다.
 ```
     const html =
      `<a class="foo" href="/foo" id="foo">Foo</a>\n` +
@@ -324,69 +329,83 @@ HTML에서는 태그의 속성값에 큰 따옴표나 작은 따옴표를 써야
      `<a href="/foo">Foo</a>\n` +
      `<a onclick="javascript:alert('foo!')" href="/foo">Foo</a>`;
 ```
+- 정규식 여러 개와 String.prototype.split을 써서 한 번에 한 가지 숙성만 체크하는 방법을 사용하겠습니다.
 ```
     function sanitizeATag(aTag) {
-        // get the parts of the tag...
+        // 태그에서 원하는 부분을 뽑아냅니다.
         const parts = aTag.match(/<a\s+(.*?)>(.*?)<\/a>/i);
-        // parts[1] are the attributes of the opening <a> tag
-        // parts[2] are what's between the <a> and </a> tags
+        // parts[1]은 여는 <a> 태그에 들어있는 속성입니다.
+        // parts[2]은 <a> 와 </a> 태그 사이에 들어있는 텍스트입니다. 
         const attributes = parts[1]
-        // then we split into individual attributes
+        // 속성분해
         .split(/\s+/);
         return '<a ' + attributes
-        // we only want class, id, and href attributes
+        // class, id, href 속성 추출
         .filter(attr => /^(?:class|id|href)[\s=]/i.test(attr))
-        // joined by spaces
-        .join(' ')
-        // close the opening <a> tag
-        + '>'
-        // add the contents
-        + parts[2]
-        // and the closing tag
-        + '</a>';
+        .join(' ') + '>' + parts[2] + '</a>';
     }
 ```
+위 sanitizeATag 함수는 `<a>` 태그가 들어있는 HTML 블록에 사용하려고 만들었습니다.
+`<a>`태그를 찾는 정규식은 아주 쉽게 만들수 있습니다.
 ```
     html.match(/<a .*?>(.*?)<\/a>/ig);
 ```
+그런데 이걸 어떻게 써야 할까요? String.prototype.replace에는 교체할 매개변수로 함수를 넘길 수 있습니다. 지금까지는 교체할 매개변수에 문자열만 썼지만 함수를 사용하면 훨씬 자유롭게 바꿀 수 있습니다. 예제를 완성하기 전에 console.log를 써서 어떻게 돌아가는지 알아보도록 합니다. 
 ```
     html.replace(/<a .*?>(.*?)<\/a>/ig, function(m, g1, offset) {
      console.log(`<a> tag found at ${offset}. contents: ${g1}`);
     });
+
+    //console
+    `<a>` tag found at 0.
+    `<a>` tag found at 44.
+    `<a>` tag found at 79.
+    `<a>` tag found at 102.
 ```
+String.prototyp.replace에 넘기는 함수는 다음 순서대로 매개변수를 받습니다.
+- m: 일치하는 문자열 전체 ($&와 같음)
+- g1: 일치하는 그룹(일치하는 것이 있다면). 일치하는 것이 여럿이라면 매개변수도 여러 개를 받음
+- offset: 원래 문자열에서 일치하는 곳의 오프셋(숫자)
+- 원래 문자열(거의 사용하지 않음)
+이제 원래 예제로 돌아가봅시다. 각 `<a>` 태그를 규격화 하는 함수를 만들었고 HTML 블록에서 `<a>` 태그를 찾는 방법도 알고 있으니 그 둘을 합치기만 하면 됩니다.
 ```
     html.replace(/<a .*?<\/a>/ig, function(m) {
      return sanitizeATag(m);
     });
 ```
+위 태그를 더 간단하게 표기 할 수도 있습니다.
 ```
     html.replace(/<a .*?<\/a>/ig, sanitizeATag);
 ```
 
 ## 17.17 위치 지정
+문자열을 다루다보면 ‘와와로 시작되는 문자열’, ‘뫄뫄로 끝나는 문자열’, ‘그 문자열의 처음’, ‘그 문자열의 끝’과 같은 식으로 위치를 지정하여 문자열을 찾고 싶을 때가 있습니다. 여기서 ‘와와’와 ‘뫄뫄’를 정규식의 앵커라고 부릅니다. 앵커는 캐럿(\^)과 달러($) 두 가지 종류가 있습니다. \^는 문자열의 맨 처음을 나타내고, $는 문자열의 맨 끝을 나타냅니다.
 ```
     const input = "It was the best of times, it was the worst of times";
     const beginning = input.match(/^\w+/g); // "It"
     const end = input.match(/\w+$/g); // "times"
     const everything = input.match(/^.*$/g); // sames as input
-    const nomatch1 = input.match(/^best/ig);
-    const nomatch2 = input.match(/worst$/ig);
+    const nomatch1 = input.match(/^best/ig); // null
+    const nomatch2 = input.match(/worst$/ig); // null
 ```
+이 외에도 앵커에는 특이한 기능이 있습니다. 문자열에 줄바꿈 문자가 들어있다면 각 줄의 처음과 끝을 찾을 수 있습니다. 각 줄의 끝과 처음을 찾으려면 m 플래그를 함께 쓰면 됩니다.
 ```
     const input = "One line\nTwo lines\nThree lines\nFour";
     const beginnings = input.match(/^\w+/mg); // ["One", "Two", "Three", "Four"]
     const endings = input.match(/\w+$/mg); // ["line", "lines", "lines", "Four"]
 ```
 ## 17.18 단어 경계 일치
+단어 경계 일치는 매우 유용한 기능입니다. /b와 /B는 앵커와 마찬가지로 입력을 소비하지 않습니다. 이는 매우 유용한 특징입니다. 단어 경계는 알파벳 또는 숫자(/w)로 시작하는 부분, 알파벳이나 숫자가 아닌 문자(\W)로 끝나는 부분, 또는 문자열의 시작이나 끝에 일치합니다. 영어 텍스트 안에 들어있는 이메일 주소를 찾아서 하이퍼링크로 바꾼다고 합시다. 
 ```
     const inputs = [
-        "john@doe.com", // nothing but the email
-        "john@doe.com is my email", // email at the beginning
-        "my email is john@doe.com", // email at the end
-        "use john@doe.com, my email", // email in the middle, with comma afterward
-        "my email:john@doe.com.", // email surrounded with punctuation
+        "john@doe.com", // 이메일 주소만 있습니다.
+        "john@doe.com is my email", // 이메일 주소로 시작
+        "my email is john@doe.com", // 이메일 주소로 끝남
+        "use john@doe.com, my email", // 이메일 주소가 중간에 있고 바로 뒤에 쉼표가 있음
+        "my email:john@doe.com.", // 이메일 주소 주위에 구두점이 있음
     ];
 ```
+이들 이메일 주소의 공통점은 단어 경계 사이에 있다는 것입니다. 단어 경계는 입력을 소비하지 않으므로, 다시 말해 일치하는 이메일 주소인 john@doe.com에서 j가 보존되고 m다음의 문자 역시 보존되므로 교체할 문자열에서 ‘다시 넣는’ 방법을 생각할 필요가 없나는 것입니다.
 ```
     const emailMatcher = /\b[a-z][a-z0-9._-]*@[a-z][a-z0-9_-]+\.[a-z]+(?:\.[a-z]+)?\b/ig;
     
@@ -400,20 +419,26 @@ HTML에서는 태그의 속성값에 큰 따옴표나 작은 따옴표를 써야
     // "my email:<a href="mailto:john@doe.com>john@doe.com</a>.",
     // ]
 ```
+단어 경계는 특정 단어로 시작하거나 특정 단어로 끝나거나, 특정 단어를 포함하는 텍스트를 찾을 때도 유용합니다. 예를 들어 /\bcount는 count와 countdown을 찾지만 discount, recount, accountable은 찾지 못합니다. /\bcount\b/는 discount recout같은 단어만 찾을 수 있고  /\Bcout\B/는  accountable과 같은 단어만 찾을 수 있습니다.
 ## 17.19 룩어헤드
+룩어헤드는 앵커나 단어 경계와 마찬가지로 입력을 소비하지 않습니다. 룩어헤드는 하위 표현식도 소비하지 않고 찾을 수 있으므로, 앵커와 단어 경계보다 범용적으로 쓸 수 있습니다. 단어 경계에서 ‘다시 넣는’ 방법을 고민할 필요가 없는 특징 역시 룩어헤드에도 적용됩니다. 룩어헤드는 문자열이 겹치는 상황에 필요하고, 룩어헤드는 써서 단순화 시킬 수 있는 패턴이 많습니다.
+
+룩어헤드를 설명할 때 주로 사용하는 예제는 비밀번호가 규격에 맞는지 검사하는 겁니다. 룩어헤드로 비밀번호를 검사한다고 가정해봅시다. 비밀번호에는 대문자와 소문자, 숫자가 최소한 하나씩 포함되어야 합니다. 또 글자도 아니고 숫자도 아닌 문자는 들어갈 수 없습니다. 
 ```
     function validPassword(p) {
-        return /[A-Z]/.test(p) && // at least one uppercase letter
-        /[0-9]/.test(p) && // at least one number
-        /[a-z]/.test(p) && // at least one lowercase letters
-        !/[^a-zA-Z0-9]/.test(p); // only letters and numbers
+        return /[A-Z]/.test(p) && // 대문자가 최소 하나 
+        /[0-9]/.test(p) && // 숫자가 최소 하나
+        /[a-z]/.test(p) && // 소문자가 최소 하나
+        !/[^a-zA-Z0-9]/.test(p); // 영문자와 숫자만 허용
     }
 ```
+이 정규식을 하나로 묶으려면 어떻게 해야 할까요? 아래와 같이 작성하면 됩니다.
 ```
     function validPassword(p) {
         return /[A-Z].*[0-9][a-z]/.test(p);
     }
 ```
+자바스크립트의 룩어헤드는 (?=[subexpression]) 형태입니다. 하위 표현식 뒤에 이어지지 않는 것만 찾는 부정형 룩어헤드(?![subexpresstion])도 있습니다. 룩어헤드를 사용하면 정규식 하나로 비밀번호의 유효성을 검사할 수 있지요.
 ```
     function validPassword(p) {
         return /(?=.*[A-Z])(?=.*[0-9])(?=.*[a-z])(?!.*[^a-zA-Z0-9])/.test(p);
